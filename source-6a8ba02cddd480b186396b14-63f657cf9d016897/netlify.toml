@@ -1,6 +1,6 @@
 [build]
+  base = "source-6a8ba02cddd480b186396b14-63f657cf9d016897"
   publish = "."
-
 [[headers]]
   for = "/*"
   [headers.values]
