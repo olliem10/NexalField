@@ -136,8 +136,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
   font-size: 14.5px; font-weight: 500; letter-spacing: 0.005em;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease), color 0.18s var(--ease);
+  transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease), color 0.18s var(--ease),
+    transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(0.97); }
 .btn-sm { padding: 10px 18px; min-height: 42px; font-size: 14px; }
 .btn-block { display: flex; width: 100%; }
 
@@ -158,6 +161,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
   margin-left: 1px;
   opacity: 0.7;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cg fill='none' stroke='%231e1b1c' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.3 8.7 8.7 3.3'/%3E%3Cpath d='M4.4 3.3h4.3v4.3'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
+  transition: transform 0.18s var(--ease);
+}
+.btn-external:hover::after { transform: translate(2px, -2px); }
+/* Primary buttons have a dark fill, so the arrow needs a light stroke to stay visible. */
+.btn-primary.btn-external::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cg fill='none' stroke='%23fbfaf8' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.3 8.7 8.7 3.3'/%3E%3Cpath d='M4.4 3.3h4.3v4.3'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .link-arrow {
@@ -188,12 +197,21 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .nav-desktop ul { display: flex; align-items: center; gap: 4px; }
 .nav-desktop a {
+  position: relative;
   display: block; padding: 8px 12px;
   font-size: 14.5px; color: var(--muted); text-decoration: none;
   border-radius: var(--radius);
   transition: color 0.15s var(--ease), background-color 0.15s var(--ease);
 }
 .nav-desktop a:hover { color: var(--ink); background: rgba(30, 27, 28, 0.045); }
+.nav-desktop a::after {
+  content: "";
+  position: absolute; left: 12px; right: 12px; bottom: 4px;
+  height: 1.5px; background: currentColor;
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.18s var(--ease);
+}
+.nav-desktop a:hover::after, .nav-desktop a:focus-visible::after { transform: scaleX(1); }
 
 .header-actions { display: flex; align-items: center; gap: 10px; }
 
@@ -216,15 +234,40 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .nav-mobile {
   border-top: 1px solid var(--line);
   background: var(--paper);
-  padding: 12px var(--gutter) 24px;
+  padding-inline: var(--gutter);
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height 240ms var(--ease), opacity 200ms var(--ease), transform 240ms var(--ease), padding-block 240ms var(--ease);
 }
 .nav-mobile[hidden] { display: none; }
+.nav-mobile.is-open {
+  opacity: 1;
+  transform: none;
+  padding-block: 12px 24px;
+}
 .nav-mobile ul { margin-bottom: 16px; }
 .nav-mobile li + li { border-top: 1px solid var(--line); }
 .nav-mobile ul a {
   display: block; padding: 14px 2px;
   font-size: 16px; text-decoration: none; color: var(--ink);
 }
+.nav-mobile ul li,
+.nav-mobile > .btn-block {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 150ms var(--ease), transform 150ms var(--ease);
+}
+.nav-mobile.is-open ul li,
+.nav-mobile.is-open > .btn-block { opacity: 1; transform: none; }
+.nav-mobile ul li:nth-child(1) { transition-delay: 0ms; }
+.nav-mobile ul li:nth-child(2) { transition-delay: 25ms; }
+.nav-mobile ul li:nth-child(3) { transition-delay: 50ms; }
+.nav-mobile ul li:nth-child(4) { transition-delay: 75ms; }
+.nav-mobile ul li:nth-child(5) { transition-delay: 100ms; }
+.nav-mobile ul li:nth-child(6) { transition-delay: 120ms; }
+.nav-mobile > .btn-block { transition-delay: 135ms; }
 
 /* ---------- Hero ---------- */
 .hero {
@@ -291,6 +334,26 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .panel-unit { font-family: var(--font-body); font-size: 12.5px; color: var(--muted); }
 .panel-note { margin-top: 16px; font-size: 13px; color: var(--muted); line-height: 1.6; }
 
+/* Hero entrance: coordinated fade/rise, above the fold, no JS required. */
+@keyframes hero-fade-up {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.hero-copy .eyebrow,
+.hero-copy h1,
+.hero-copy .lead,
+.hero-copy .btn-row,
+.hero-copy .hero-meta,
+.hero-panel {
+  animation: hero-fade-up 520ms var(--ease) both;
+}
+.hero-copy .eyebrow { animation-delay: 0ms; }
+.hero-copy h1 { animation-delay: 90ms; }
+.hero-copy .lead { animation-delay: 180ms; }
+.hero-copy .btn-row { animation-delay: 270ms; }
+.hero-copy .hero-meta { animation-delay: 360ms; }
+.hero-panel { animation-delay: 420ms; }
+
 /* ---------- Service rows (What We Build) ---------- */
 .service-rows { border-top: 1px solid var(--line); }
 .service-row {
@@ -298,8 +361,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
   grid-template-columns: 56px minmax(0, 1fr) minmax(0, 210px);
   gap: 28px;
   align-items: start;
-  padding-block: 34px;
+  margin-inline: -20px;
+  padding: 34px 20px;
   border-bottom: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition: background-color 200ms var(--ease), box-shadow 200ms var(--ease), transform 200ms var(--ease);
+}
+.service-row:hover {
+  background: var(--surface);
+  box-shadow: 0 14px 34px -22px rgba(30, 27, 28, 0.35);
+  transform: translateY(-2px);
 }
 .row-index {
   font-family: var(--font-display);
@@ -307,7 +378,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
   letter-spacing: 0.04em;
   padding-top: 5px;
 }
-.row-body h3 { font-size: clamp(21px, 2.2vw, 26px); margin-bottom: 10px; }
+.row-body h3 {
+  font-size: clamp(21px, 2.2vw, 26px); margin-bottom: 10px;
+  transition: color 200ms var(--ease), transform 200ms var(--ease);
+}
+.service-row:hover .row-body h3 { color: var(--accent); transform: translateX(2px); }
 .row-desc { font-size: 16.5px; margin-bottom: 8px; }
 .row-detail { color: var(--muted); font-size: 15px; max-width: 62ch; }
 .row-aside { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
@@ -321,9 +396,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-radius: var(--radius);
   padding: 28px;
   display: flex; flex-direction: column;
-  transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
+  transition: border-color 0.18s var(--ease), box-shadow 220ms var(--ease), transform 220ms var(--ease);
 }
-.card:hover { border-color: var(--line-strong); box-shadow: 0 14px 34px -22px rgba(30, 27, 28, 0.35); }
+.card:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 14px 34px -22px rgba(30, 27, 28, 0.35);
+  transform: translateY(-4px);
+}
 
 /* ---------- Demos ---------- */
 .demo-grid {
@@ -346,6 +425,23 @@ button, input, select, textarea { font: inherit; color: inherit; }
   letter-spacing: 0.07em; text-transform: uppercase;
 }
 .demo-card .btn { align-self: flex-start; margin-top: 22px; }
+
+/* Chapter & Bloom — featured real-world project, spans the full grid row. */
+.demo-card--featured {
+  grid-column: 1 / -1;
+}
+.demo-card--featured .featured-eyebrow { margin-bottom: 12px; }
+.demo-card--featured > p:not(.tag) { max-width: 62ch; }
+.featured-foot {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 16px; margin-top: 18px;
+}
+.featured-foot .tag { margin-top: 0; }
+.featured-foot .btn { margin-top: 0; }
+.demo-card--featured:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 46px -24px rgba(30, 27, 28, 0.42);
+}
 
 /* ---------- Why ---------- */
 .why-grid {
@@ -528,12 +624,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
     linear-gradient(currentColor, currentColor) center/1.5px 13px no-repeat;
   transition: transform 0.22s var(--ease);
 }
-.faq-item[open] summary::after {
+.faq-item[open]:not(.is-collapsing) summary::after {
   transform: rotate(90deg);
   background-size: 0 0, 1.5px 13px;
 }
 .faq-answer { padding: 0 2px 24px; }
 .faq-answer p { color: var(--muted); max-width: 68ch; }
+/* When JS animates the collapse, .faq-item stays [open] until the animation
+   finishes; the icon needs to flip back the moment the collapse starts. */
+.faq-item.is-collapsing { overflow: hidden; }
 
 /* ---------- Contact ---------- */
 .contact-grid {
@@ -741,6 +840,58 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .hero-meta { font-size: 12px; }
 }
 
+/* ---------- Scroll reveal (progressive enhancement) ----------
+   Hidden-until-scrolled-into-view state only applies once JavaScript has
+   added `.js` to <html> and taken over revealing these elements; without
+   JavaScript everything stays fully visible. */
+html.js .section-head,
+html.js .why-intro,
+html.js .proof-band,
+html.js .about-copy,
+html.js .about-side .side-block,
+html.js .form-card,
+html.js .contact-intro,
+html.js .why-list > li,
+html.js .process-grid > li {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 480ms var(--ease), transform 480ms var(--ease);
+}
+html.js .section-head.is-visible,
+html.js .why-intro.is-visible,
+html.js .proof-band.is-visible,
+html.js .about-copy.is-visible,
+html.js .about-side .side-block.is-visible,
+html.js .form-card.is-visible,
+html.js .contact-intro.is-visible,
+html.js .why-list > li.is-visible,
+html.js .process-grid > li.is-visible {
+  opacity: 1;
+  transform: none;
+}
+/* Cards and service rows already carry their own hover transform/shadow
+   transitions (see .card / .service-row above); the reveal-in effect here
+   is opacity-only so it never fights the hover timing on the same
+   `transform` property. */
+html.js .demo-grid > li,
+html.js .price-grid > li,
+html.js .service-rows > li {
+  opacity: 0;
+  transition: opacity 450ms var(--ease);
+}
+html.js .demo-grid > li.is-visible,
+html.js .price-grid > li.is-visible,
+html.js .service-rows > li.is-visible {
+  opacity: 1;
+}
+
+/* Subtle native cross-document fade between index / thank-you / 404 where
+   supported. Unsupported browsers simply ignore this — no JS, no risk to
+   the existing navigation or form-submit flow. */
+@view-transition {
+  navigation: auto;
+}
+
 /* ---------- Motion preferences ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -748,6 +899,23 @@ button, input, select, textarea { font: inherit; color: inherit; }
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  /* Content revealed on scroll must be immediately visible, not gated
+     behind motion the user has asked to avoid. */
+  html.js .section-head,
+  html.js .why-intro,
+  html.js .proof-band,
+  html.js .about-copy,
+  html.js .about-side .side-block,
+  html.js .form-card,
+  html.js .contact-intro,
+  html.js .demo-grid > li,
+  html.js .price-grid > li,
+  html.js .why-list > li,
+  html.js .process-grid > li,
+  html.js .service-rows > li {
+    opacity: 1;
+    transform: none;
   }
 }
 

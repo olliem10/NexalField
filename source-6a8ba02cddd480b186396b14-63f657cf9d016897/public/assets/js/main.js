@@ -11,11 +11,39 @@
   var mobileNav = document.getElementById('mobileNav');
 
   if (toggle && mobileNav) {
+    var navCloseTimer = null;
+    var MOBILE_NAV_CLOSE_MS = 300;
+
     var setNav = function (open) {
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-      mobileNav.hidden = !open;
       var label = toggle.querySelector('.nav-toggle-label');
       if (label) label.textContent = open ? 'Close' : 'Menu';
+
+      if (navCloseTimer) {
+        clearTimeout(navCloseTimer);
+        navCloseTimer = null;
+      }
+
+      if (open) {
+        mobileNav.hidden = false;
+        var target = mobileNav.scrollHeight;
+        mobileNav.style.maxHeight = '0px';
+        // Force a reflow so the max-height change below transitions
+        // instead of jumping straight to its end value.
+        void mobileNav.offsetHeight;
+        mobileNav.style.maxHeight = target + 'px';
+        mobileNav.classList.add('is-open');
+      } else {
+        mobileNav.style.maxHeight = mobileNav.scrollHeight + 'px';
+        void mobileNav.offsetHeight;
+        mobileNav.classList.remove('is-open');
+        mobileNav.style.maxHeight = '0px';
+        navCloseTimer = setTimeout(function () {
+          mobileNav.hidden = true;
+          mobileNav.style.maxHeight = '';
+          navCloseTimer = null;
+        }, MOBILE_NAV_CLOSE_MS);
+      }
     };
 
     toggle.addEventListener('click', function () {
@@ -39,6 +67,131 @@
     if (mq.addEventListener) mq.addEventListener('change', onChange);
     else if (mq.addListener) mq.addListener(onChange);
   }
+
+  /* ---------------- Scroll reveal ---------------- */
+  (function () {
+    if (!document.documentElement.classList.contains('js')) return;
+
+    var selector = [
+      '.section-head', '.why-intro', '.proof-band', '.about-copy',
+      '.about-side .side-block', '.form-card', '.contact-intro',
+      '.demo-grid > li', '.price-grid > li', '.why-list > li',
+      '.process-grid > li', '.service-rows > li'
+    ].join(', ');
+
+    var targets;
+    try {
+      targets = Array.prototype.slice.call(document.querySelectorAll(selector));
+    } catch (e) {
+      return;
+    }
+    if (!targets.length) return;
+
+    var revealAll = function () {
+      targets.forEach(function (el) { el.classList.add('is-visible'); });
+    };
+
+    if (!('IntersectionObserver' in window)) {
+      revealAll();
+      return;
+    }
+
+    try {
+      // Stagger items that share a parent (grid/list children), capped so no
+      // single item waits more than 150ms behind the first in its group.
+      var groupCounts = [];
+      var groupParents = [];
+      targets.forEach(function (el) {
+        var parent = el.parentElement;
+        var idx = groupParents.indexOf(parent);
+        if (idx === -1) {
+          idx = groupParents.length;
+          groupParents.push(parent);
+          groupCounts.push(0);
+        }
+        var position = groupCounts[idx];
+        groupCounts[idx] = position + 1;
+        if (position > 0) {
+          el.style.transitionDelay = Math.min(position * 60, 150) + 'ms';
+        }
+      });
+
+      var io = new IntersectionObserver(function (entries, observer) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+
+      targets.forEach(function (el) { io.observe(el); });
+    } catch (e) {
+      revealAll();
+    }
+  })();
+
+  /* ---------------- FAQ accordion (animated) ---------------- */
+  (function () {
+    var items = document.querySelectorAll('.faq-item');
+    if (!items.length || !window.Element || !Element.prototype.animate) return;
+
+    var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    Array.prototype.forEach.call(items, function (details) {
+      var summary = details.querySelector('summary');
+      var answer = details.querySelector('.faq-answer');
+      if (!summary || !answer) return;
+
+      var heightAnim = null;
+
+      var finish = function (opening) {
+        details.open = opening;
+        details.classList.remove('is-collapsing');
+        details.style.overflow = '';
+        heightAnim = null;
+      };
+
+      var expand = function () {
+        details.classList.remove('is-collapsing');
+        details.style.overflow = 'hidden';
+        details.open = true;
+        var startHeight = summary.getBoundingClientRect().height;
+        var endHeight = startHeight + answer.getBoundingClientRect().height;
+        if (heightAnim) heightAnim.cancel();
+        heightAnim = details.animate(
+          { height: [startHeight + 'px', endHeight + 'px'] },
+          { duration: 220, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' }
+        );
+        answer.animate({ opacity: [0, 1] }, { duration: 200, easing: 'ease' });
+        heightAnim.onfinish = function () { finish(true); };
+      };
+
+      var collapse = function () {
+        details.classList.add('is-collapsing');
+        details.style.overflow = 'hidden';
+        var startHeight = details.getBoundingClientRect().height;
+        var endHeight = summary.getBoundingClientRect().height;
+        if (heightAnim) heightAnim.cancel();
+        heightAnim = details.animate(
+          { height: [startHeight + 'px', endHeight + 'px'] },
+          { duration: 200, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' }
+        );
+        answer.animate({ opacity: [1, 0] }, { duration: 140, easing: 'ease' });
+        heightAnim.onfinish = function () { finish(false); };
+      };
+
+      summary.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (reduceMotion) {
+          details.open = !details.open;
+          return;
+        }
+        if (details.open) collapse();
+        else expand();
+      });
+    });
+  })();
 
   /* ---------------- Enquiry form ---------------- */
   var form = document.getElementById('enquiryForm');
